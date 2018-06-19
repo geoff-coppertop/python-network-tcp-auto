@@ -50,6 +50,7 @@ setup(
     install_requires=[
         'aiozeroconf',
         'transitions',
+        'axel',
     ],
     project_urls={
         'Bug Reports': 'https://github.com/geoff-coppertop/auto-tcp-network/issues',

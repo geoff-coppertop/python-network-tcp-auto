@@ -102,3 +102,6 @@ ENV/
 
 # File system stuff
 .DS_Store
+
+# Test and coverage reports
+/reports

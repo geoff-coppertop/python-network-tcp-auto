@@ -1,0 +1,20 @@
+language: python
+
+python:
+  - "3.6"
+
+install:
+  - pip install tox
+
+script:
+  - tox
+
+after_success:
+  - codecov
+
+notifications:
+  email:
+    recipients:
+      - geoff.coppertop@gmail.com
+    on_success: never # default: change
+    on_failure: always # default: always

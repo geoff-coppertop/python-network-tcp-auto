@@ -46,13 +46,16 @@ def main():
         # Starting a client
         print('Starting a server')
         server = Server(loop, service_type, port)
+        server.connection_changed += connection_changed
         server.start()
 
         role = server
     else:
         print('Starting a client')
         client = Client(loop, service_type, port)
-        client.start(connected, disconnected, data_rx)
+        client.connection_changed += connection_changed
+        client.data_rx += data_rx
+        client.start()
 
         role = client
     try:
@@ -66,24 +69,28 @@ def main():
     finally:
         loop.close()
 
-def connected():
-    logging.debug('CONNECTED')
-
-    global is_connected
-    global data_gen_task
-
-    is_connected = True
-
-    loop = asyncio.get_event_loop()
-
-    data_gen_task = loop.create_task(gen_data())
-
-def disconnected():
-    logging.debug('DISCONNECTED')
-
+def connection_changed(sender, connections):
     global is_connected
 
-    is_connected = False
+    if sender == 'client':
+        if connections > 0:
+            global data_gen_task
+
+            logging.debug('CONNECTED')
+
+            is_connected = True
+
+            loop = asyncio.get_event_loop()
+
+            data_gen_task = loop.create_task(gen_data())
+        else:
+            logging.debug('DISCONNECTED')
+
+            is_connected = False
+    elif sender == 'server':
+        logging.debug('Server connected')
+    else:
+        raise ValueError('Sender {0} not supported.'.format(sender))
 
 def data_rx(data):
     logging.debug('RX: {0}'.format(data))

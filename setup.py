@@ -41,7 +41,6 @@ setup(
     keywords='tcp zeroconf network',  # Optional
     packages=find_packages('src'),
     package_dir={'': 'src'},
-    # py_modules=[splitext(basename(path))[0] for path in glob('src/*.py')],
     include_package_data=True,
     use_scm_version=True,
     setup_requires=[
@@ -53,7 +52,7 @@ setup(
         'axel',
     ],
     project_urls={
-        'Bug Reports': 'https://github.com/geoff-coppertop/auto-tcp-network/issues',
-        'Source': 'https://github.com/geoff-coppertop/auto-tcp-network/',
+        'Bug Reports': 'https://github.com/geoff-coppertop/python-auto-tcp-network/issues',
+        'Source': 'https://github.com/geoff-coppertop/python-auto-tcp-network/',
     },
 )

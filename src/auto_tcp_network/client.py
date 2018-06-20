@@ -15,6 +15,7 @@ import uuid
 import netifaces
 
 from aiozeroconf import ServiceBrowser, ServiceStateChange, Zeroconf
+from axel import Event
 
 class Client(object):
     '''TCP client object that searches for a server using zeroconf'''
@@ -22,6 +23,9 @@ class Client(object):
     def __init__(self, loop, service_type, port):
         '''Create a TCP client'''
         self.__logger = logging.getLogger('client')
+
+        self.connection_changed = Event()
+        self.data_rx = Event()
 
         self.__service_type = service_type
         self.__loop = loop
@@ -31,31 +35,25 @@ class Client(object):
         self.__server_connection = None
         self.__shutdown_in_progress = False
 
-    def start(self, connected_cb, disconnected_cb, data_rx_cb):
+    def start(self):
         '''Start the client'''
         # Exit here if we're already running, we don't want to randomly
         # restart, log as warning
         if self.is_running():
             return
 
-        # Add data callback to endpoint list, effectively this means we echo all
-        # calls
-        self.__connected = connected_cb
-        self.__disconnected  = disconnected_cb
-        self.__data_rx = data_rx_cb
-
         # Start zeroconf service broadcast
         self.__start_service_discovery()
 
     def stop(self):
         '''Stop the client'''
-        if self.is_browsing():
+        if self.__is_browsing():
             # Stop zeroconf service discovery first so that we don't collect more
             # clients as were trying to shutdown
             self.__loop.run_until_complete(self.__stop_service_discovery())
 
         # Only do this next bit if we're actually connected
-        if self.is_connected():
+        if self.__is_connected():
             # Pushing an empty byte into the queue will cause the write_task to
             # end, and should take the read_task with it... fingers crossed...
             self.__shutdown_in_progress = True
@@ -68,15 +66,7 @@ class Client(object):
 
     def is_running(self):
         '''Inidication that the client is running'''
-        return self.is_browsing() or self.is_connected()
-
-    def is_browsing(self):
-        '''Indication that the client is browsing for a server'''
-        return (self.__browser is not None)
-
-    def is_connected(self):
-        '''Inidcation that the client is connected to a server'''
-        return (self.__server_connection is not None)
+        return self.__is_browsing() or self.__is_connected()
 
     def send(self, data):
         '''Send data on the client interface'''
@@ -84,6 +74,14 @@ class Client(object):
             self.__queue.put_nowait(data)
         except asyncio.QueueFull:
             self.__logger.warning('Queue full, data lost')
+
+    def __is_browsing(self):
+        '''Indication that the client is browsing for a server'''
+        return (self.__browser is not None)
+
+    def __is_connected(self):
+        '''Indication that the client is connected to a server'''
+        return (self.__server_connection is not None)
 
     def __on_service_state_change(self, zc, service_type, name, state_change):
         '''
@@ -152,7 +150,7 @@ class Client(object):
                 data = await reader.read(size)
 
                 # Send data to receiving process
-                self.__data_rx(data)
+                self.data_rx(data)
 
         # If we aren't shutting dow (because of a client.stop) put a null byte
         # in the buffer to cause the write process to terminate
@@ -197,7 +195,7 @@ class Client(object):
             2. Setup tasks to handle communication R/W with the server and then
                wait
         '''
-        self.__connected()
+        self.connection_changed('client', 1)
 
         # Stop service discovery because we've found something
         await self.__stop_service_discovery()
@@ -218,7 +216,7 @@ class Client(object):
         '''
         self.__server_connection = None
 
-        self.__disconnected()
+        self.connection_changed('client', 0)
 
         if not self.__shutdown_in_progress:
             # Start service discovery because we disconnected not because the

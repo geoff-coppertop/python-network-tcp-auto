@@ -15,6 +15,7 @@ import uuid
 import netifaces
 
 from aiozeroconf import ServiceInfo, Zeroconf
+from axel import Event
 
 class Server(object):
     '''TCP server object that broadcasts its availability using zeroconf'''
@@ -22,6 +23,8 @@ class Server(object):
     def __init__(self, loop, service_type, port):
         '''Create a TCP server'''
         self.__logger = logging.getLogger('server')
+
+        self.connection_changed = Event()
 
         # this keeps track of all the clients that connected to our
         # server.  It can be useful in some cases, for instance to
@@ -112,7 +115,8 @@ class Server(object):
         # connection
         self.__clients[task] = (reader, writer)
 
-        self.__logger.debug('Client(s) connected: {0}'.format(len(self.__clients)))
+        # Notify of connection change
+        self.__connection_changed()
 
         # Add the client_done callback to be run when the future becomes done
         task.add_done_callback(self.__client_done)
@@ -127,10 +131,20 @@ class Server(object):
 
         del self.__clients[task]
 
-        self.__logger.debug('Client(s) connected: {0}'.format(len(self.__clients)))
+        # Notify of connection change
+        self.__connection_changed()
 
         if not self.__clients and self.__shutdown_in_progress:
             self.__server.close()
+
+    def __connection_changed(self):
+        '''
+        '''
+        client_count = len(self.__clients)
+
+        self.__logger.debug('Client(s) connected: {0}'.format(client_count))
+
+        self.connection_changed('server', client_count)
 
     async def __handle_client_read(self, reader):
         '''

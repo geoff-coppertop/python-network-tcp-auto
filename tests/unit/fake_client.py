@@ -19,7 +19,7 @@ class FakeClient(object):
     def __init__(self):
         """
         """
-        self.__logger = logging.getLogger('fake_client')
+        self.__logger = logging.getLogger(__name__)
 
         self.__is_running = False
 

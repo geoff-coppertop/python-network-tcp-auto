@@ -19,7 +19,7 @@ class FakeServer(object):
     def __init__(self):
         """
         """
-        self.__logger = logging.getLogger('fake_server')
+        self.__logger = logging.getLogger(__name__)
 
         self.__is_running = False
 

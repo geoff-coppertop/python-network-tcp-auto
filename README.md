@@ -9,6 +9,7 @@ no the consuming application. It provides,
  * a method for sending data, raises an error if data is sent while not
  connected
 The connection mechanism operates according to the following state machine:
+
 ![network manager connection state diagram](https://github.com/geoff-coppertop/python-auto-tcp-network/network_manager_state_diagram.png)
 ## client
 

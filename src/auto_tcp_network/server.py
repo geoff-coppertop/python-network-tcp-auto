@@ -20,11 +20,11 @@ from axel import Event
 class Server(object):
     '''TCP server object that broadcasts its availability using zeroconf'''
 
-    def __init__(self, loop, service_type, port):
+    def __init__(self, service_type, port):
         '''Create a TCP server'''
-        self.__logger = logging.getLogger('server')
+        self.__logger = logging.getLogger(__name__)
 
-        self.connection_changed = Event()
+        self.connection_changed = Event(sender='server')
 
         # this keeps track of all the clients that connected to our
         # server.  It can be useful in some cases, for instance to
@@ -33,7 +33,7 @@ class Server(object):
         self.__clients = {} # task -> (reader, writer)
         self.__port = port
         self.__server = None
-        self.__loop = loop
+        self.__loop = None
         self.__shutdown_in_progress = False
         self.__queue = asyncio.Queue()
         self.__info = ServiceInfo(
@@ -49,7 +49,7 @@ class Server(object):
             {},
             socket.gethostname() + '.')
 
-    def start(self):
+    def start(self, loop):
         '''Start the server'''
         self.__logger.debug('Server started')
 
@@ -58,11 +58,13 @@ class Server(object):
         if self.is_running():
             return
 
+        self.__loop = loop
+
         # Start TCP server
         start_tcp_task = self.__loop.create_task(self.__start_tcp())
         start_tcp_task.add_done_callback(self.__start_broadcast)
 
-    def stop(self):
+    async def stop(self):
         '''
         Stop the server
 
@@ -74,11 +76,11 @@ class Server(object):
 
             # Stop zeroconf service broadcast first so that we don't collect more
             # clients as were trying to shutdown
-            self.__loop.run_until_complete(self.__stop_broadcast())
+            await self.__stop_broadcast()
 
             self.__queue.put_nowait(b'')
 
-            self.__loop.run_until_complete(self.__server.wait_closed())
+            await self.__server.wait_closed()
 
             self.__server = None
 
@@ -144,7 +146,7 @@ class Server(object):
 
         self.__logger.debug('Client(s) connected: {0}'.format(client_count))
 
-        self.connection_changed('server', client_count)
+        self.connection_changed(client_count)
 
     async def __handle_client_read(self, reader):
         '''

@@ -22,6 +22,8 @@ from auto_tcp_network import Client, Server
 client = None
 server = None
 
+loop = None
+
 is_connected = False
 
 data_gen_task = None
@@ -30,6 +32,7 @@ def main():
     global client
     global server
     global data_gen_task
+    global loop
 
     role = None
 
@@ -44,14 +47,14 @@ def main():
 
     if args.type == 'server':
         # Starting a client
-        print('Starting a server')
+        logging.debug('Starting a server')
         server = Server(loop, service_type, port)
         server.connection_changed += connection_changed
         server.start()
 
         role = server
     else:
-        print('Starting a client')
+        logging.debug('Starting a client')
         client = Client(loop, service_type, port)
         client.connection_changed += connection_changed
         client.data_rx += data_rx
@@ -61,7 +64,7 @@ def main():
     try:
         loop.run_forever()
     except KeyboardInterrupt:
-        print("Stopping...")
+        logging.debug("Stopping...")
         role.stop()
 
         if data_gen_task:
@@ -71,6 +74,7 @@ def main():
 
 def connection_changed(sender, connections):
     global is_connected
+    global loop
 
     if sender == 'client':
         if connections > 0:
@@ -79,8 +83,6 @@ def connection_changed(sender, connections):
             logging.debug('CONNECTED')
 
             is_connected = True
-
-            loop = asyncio.get_event_loop()
 
             data_gen_task = loop.create_task(gen_data())
         else:
@@ -92,7 +94,7 @@ def connection_changed(sender, connections):
     else:
         raise ValueError('Sender {0} not supported.'.format(sender))
 
-def data_rx(data):
+def data_rx(sender, data):
     logging.debug('RX: {0}'.format(data))
 
 async def gen_data():

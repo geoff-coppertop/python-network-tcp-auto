@@ -20,53 +20,66 @@ from axel import Event
 class Client(object):
     '''TCP client object that searches for a server using zeroconf'''
 
-    def __init__(self, loop, service_type, port):
+    def __init__(self, service_type, port):
         '''Create a TCP client'''
-        self.__logger = logging.getLogger('client')
+        self.__logger = logging.getLogger(__name__)
 
-        self.connection_changed = Event()
-        self.data_rx = Event()
+        self.connection_changed = Event(sender='client')
+        self.data_rx = Event(sender='client')
 
         self.__service_type = service_type
-        self.__loop = loop
+        self.__loop = None
         self.__browser = None
         self.__port = port
         self.__queue = asyncio.Queue()
         self.__server_connection = None
         self.__shutdown_in_progress = False
 
-    def start(self):
+    def start(self, loop):
         '''Start the client'''
         # Exit here if we're already running, we don't want to randomly
         # restart, log as warning
         if self.is_running():
             return
 
+        self.__loop = loop
+
         # Start zeroconf service broadcast
         self.__start_service_discovery()
 
-    def stop(self):
+    async def stop(self):
         '''Stop the client'''
+        self.__shutdown_in_progress = True
+
         if self.__is_browsing():
+            self.__logger.debug("I'm going to stop browsing now...")
+
             # Stop zeroconf service discovery first so that we don't collect more
             # clients as were trying to shutdown
-            self.__loop.run_until_complete(self.__stop_service_discovery())
+            await self.__stop_service_discovery()
 
         # Only do this next bit if we're actually connected
         if self.__is_connected():
-            # Pushing an empty byte into the queue will cause the write_task to
-            # end, and should take the read_task with it... fingers crossed...
-            self.__shutdown_in_progress = True
+            self.__logger.debug("I'm going to start disconnecting now...")
 
-            self.__queue.put_nowait(b'')
-
-            self.__loop.run_until_complete(self.__server_connection)
+            await self.__stop_server_connection()
 
         self.__shutdown_in_progress = False
 
     def is_running(self):
         '''Inidication that the client is running'''
         return self.__is_browsing() or self.__is_connected()
+
+    async def __stop_server_connection(self):
+        # Pushing an empty byte into the queue will cause the write_task to
+        # end, and should take the read_task with it... fingers crossed...
+        self.__queue.put_nowait(b'')
+
+        self.__logger.debug('About to wait for server connection to terminate')
+
+        await self.__server_connection
+
+        self.__logger.debug('Server connection terminated')
 
     def send(self, data):
         '''Send data on the client interface'''
@@ -195,15 +208,22 @@ class Client(object):
             2. Setup tasks to handle communication R/W with the server and then
                wait
         '''
-        self.connection_changed('client', 1)
+        self.__logger.debug('connection changed')
+
+        self.connection_changed(1)
+
+        self.__logger.debug('stopping service discovery')
 
         # Stop service discovery because we've found something
         await self.__stop_service_discovery()
 
-        await asyncio.gather(
-            self.__loop.create_task(self.__handle_server_read(reader)),
-            self.__loop.create_task(self.__handle_server_write(writer))
-        )
+        self.__logger.debug('set up server r/w processes')
+
+        await asyncio.gather(*[
+            self.__handle_server_read(reader),
+            self.__handle_server_write(writer)])
+
+        self.__logger.debug('connected process complete')
 
     def __disconnected_process(self, task):
         '''
@@ -216,7 +236,7 @@ class Client(object):
         '''
         self.__server_connection = None
 
-        self.connection_changed('client', 0)
+        self.connection_changed(0)
 
         if not self.__shutdown_in_progress:
             # Start service discovery because we disconnected not because the

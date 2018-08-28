@@ -8,8 +8,8 @@ test:
 	# Make a coverage sub-directory
 	mkdir reports/coverage
     # Build the docker image
-	docker build -t test-image:auto-tcp-network .
+	docker build -t test-image:network-tcp-auto .
     # Run `tox` on the image. Automatically remove the container when it exits
-	docker run -v "$(shell pwd)/reports":/reports --rm -t test-image:auto-tcp-network tox
+	docker run -v "$(shell pwd)/reports":/reports --rm -t test-image:network-tcp-auto tox
 	# Clean dangling images that result from code changes
 	docker images -f dangling=true -q |xargs docker rmi -f

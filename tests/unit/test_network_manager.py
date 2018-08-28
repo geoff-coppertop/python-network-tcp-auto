@@ -12,7 +12,7 @@ import logging
 import pytest
 import time
 
-from auto_tcp_network import NetworkManager
+from network_tcp_auto import NetworkManager
 from .fake_client import FakeClient
 from .fake_server import FakeServer
 

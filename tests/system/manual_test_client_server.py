@@ -17,7 +17,7 @@ import asyncio
 import logging
 import random
 
-from auto_tcp_network import Client, Server
+from network_tcp_auto import Client, Server
 
 client = None
 server = None

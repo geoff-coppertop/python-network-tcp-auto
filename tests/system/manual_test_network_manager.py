@@ -12,7 +12,7 @@ import asyncio
 import logging
 import random
 
-from auto_tcp_network import Client, Server, NetworkManager
+from network_tcp_auto import Client, Server, NetworkManager
 
 loop = None
 data_gen_task = None

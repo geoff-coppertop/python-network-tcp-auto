@@ -1,5 +1,5 @@
-# auto-tcp-network
-The auto-tcp-network is a self healing client-server network that uses zeroconf
+# python-network-tcp-auto
+The network-tcp-auto is a self healing client-server network that uses zeroconf
 networking to find nodes of the correct service type.
 ## network manager
 The network manager is responsible for providing a simple application interface
@@ -10,7 +10,7 @@ no the consuming application. It provides,
  connected
 The connection mechanism operates according to the following state machine:
 
-![network manager connection state diagram](https://github.com/geoff-coppertop/python-auto-tcp-network/network_manager_state_diagram.png)
+![network manager connection state diagram](https://github.com/geoff-coppertop/python-network-tcp-auto/network_manager_state_diagram.png)
 ## client
 
 ## server

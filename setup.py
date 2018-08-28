@@ -26,10 +26,10 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(
-    name='auto-tcp-network',
+    name='network-tcp-auto',
     description='Auto configuring TCP network for simple data transmission',
     long_description=long_description,
-    url='https://github.com/geoff-coppertop/auto-tcp-network',
+    url='https://github.com/geoff-coppertop/network-tcp-auto',
     author='Geoffrey Thomas',
     classifiers=[
         'Development Status :: 3 - Alpha',
@@ -52,7 +52,7 @@ setup(
         'axel',
     ],
     project_urls={
-        'Bug Reports': 'https://github.com/geoff-coppertop/python-auto-tcp-network/issues',
-        'Source': 'https://github.com/geoff-coppertop/python-auto-tcp-network/',
+        'Bug Reports': 'https://github.com/geoff-coppertop/python-network-tcp-auto/issues',
+        'Source': 'https://github.com/geoff-coppertop/python-network-tcp-auto/',
     },
 )
